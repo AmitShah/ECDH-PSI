@@ -2,6 +2,7 @@
 package main
 
 import (
+    "crypto/ecdsa"
     "crypto/elliptic"
     "crypto/rand"
     "crypto/sha256"
@@ -68,7 +69,7 @@ func increment(counter []byte) {
     }
 }
 
-func HashIntoCurvePoint(r []byte) (x, y *big.Int) {
+func HashIntoCurvePoint(c elliptic.Curve, r []byte) (x, y *big.Int) {
     t := make([]byte, 32)
     copy(t, r)
 
@@ -83,7 +84,15 @@ func HashIntoCurvePoint(r []byte) (x, y *big.Int) {
 func main() {
 
 
+
     flag.Parse()
+    curve:=elliptic.P256()
+
+    key, err := ecdsa.GenerateKey(curve, rand.Reader)
+    if err != nil {
+        return
+    }
+    
 
    // args := flag.Args()
     pwd:="GEOHASHINGVALUE"
@@ -92,9 +101,10 @@ func main() {
 
     hash := sha256.Sum256([]byte(pwd))
     fmt.Println("hash:", fmt.Sprintf("%x",hash))
-    x, y := HashIntoCurvePoint(hash[:]) // Convert password hash into elliptic curve point.
+    x, y := HashIntoCurvePoint(curve, hash[:]) // Convert password hash into elliptic curve point.
     fmt.Println("Password:           ", pwd)
-    fmt.Println("DER value:",hex.EncodeToString(eccp.Marshal(elliptic.P256(), x, y)))    
+    x,y = curve.ScalarMult(x,y,key.D.Bytes())
+    fmt.Println("DER value:",hex.EncodeToString(eccp.Marshal(curve, x, y)))    
     // fmt.Println("\nHash to point:\t", pkx, pky)
 
     // r, _ := randScalar(c) // Random value to mask password

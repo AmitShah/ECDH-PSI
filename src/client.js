@@ -94,39 +94,20 @@ console.log("DER VALUE:",clientValue.encode("hex",true));
 // console.log(compareValue.getX().toString(16));
 
 console.log("-----------------------------------\r\n");
-var Alice = ec.genKeyPair();
 
-value= "GEOHASHINGVALUE";
-curve = new EC("p256");
-r = curve.hash().update(value).digest();//"hex");
-var red = BN.red(curve.curve.p);
-x = new BN(r,16);
-console.log("hash:",r.toString('hex'));
-var result = x.pow(new BN(3)).sub(x.mul(new BN(3))).add(curve.curve.b.fromRed())
-var resultR = result.toRed(red);
-
-console.log("A val:",curve.curve.a.fromRed().toString('hex'));
-console.log("B val:",curve.curve.b.fromRed().toString('hex'));
-console.log("P val:",curve.curve.p.toString('hex'));
-console.log("x3 value:",result.toString(16));
-console.log("y value:", resultR.redSqrt().toString(16));
-
-
-const CURVE = new EC("p256");
-const RED = BN.red(CURVE.curve.p);
-
+const curve = new EC("p256");
+const sha256 =curve.hash(); 
+const RED = BN.red(curve.curve.p);
 function tryPointNotReductionContext(r){
     var x = new BN(r,16);
-    var result = (x.pow(new BN(3)).sub(x.mul(new BN(3))).add(CURVE.curve.b.fromRed())).toRed(red).redSqrt().fromRed()
+    var result = (x.pow(new BN(3)).sub(x.mul(new BN(3))).add(curve.curve.b.fromRed())).toRed(red).redSqrt().fromRed()
     return result;
 }
-
-
 function pointFromX(x,odd) {
   //BN simply returns the passed in value if it is a BN, however; 
   //reduction contexts are immutable, so we have to do some craziness
-  var a = new BN(CURVE.curve.a.fromRed().toString(16), 16).toRed(RED);
-  var b = new BN(CURVE.curve.b.fromRed().toString(16), 16).toRed(RED);
+  var a = new BN(curve.curve.a.fromRed().toString(16), 16).toRed(RED);
+  var b = new BN(curve.curve.b.fromRed().toString(16), 16).toRed(RED);
   console.log("a:",a.fromRed().toString(16))
   console.log("b:",b.fromRed().toString(16))
   x = (new BN(x, 16)).toRed(RED);
@@ -137,14 +118,14 @@ function pointFromX(x,odd) {
 
   var y2 = x.redSqr().redMul(x).redIAdd(x.redMul(a)).redIAdd(b);
   var y = y2.redSqrt();
-  if (y.redSqr().redSub(y2).cmp(CURVE.curve.zero) !== 0)
+  if (y.redSqr().redSub(y2).cmp(curve.curve.zero) !== 0)
     throw new Error('invalid point');
   
   var isOdd = y.fromRed().isOdd();
   if (odd && !isOdd || !odd && isOdd)
     y = y.redNeg();
   console.log("pontFromX:",y.fromRed().toString(16));
-  return  CURVE.curve.point(x,y);
+  return  curve.curve.point(x,y);
 };
 
 
@@ -173,6 +154,7 @@ function incrementLSB(buffer){
             }
         }        
     }
+    throw new Error("no bits left to increment");
 }
 
 
@@ -180,10 +162,11 @@ function incrementLSB(buffer){
 function tryPoint(r){
     for(;;){
         try{
-            return CURVE.curve.pointFromX(r);
+            return curve.curve.pointFromX(r);
             //return pointFromX(r) no need for custom
         }catch(e){
             console.error(e);
+            //if we cannot encode point we throw a final error to break the for loop
             incrementLSB(r);
             
         }
@@ -191,16 +174,32 @@ function tryPoint(r){
 }
 
 
+//generate ephemereal secret
+var Alice = ec.genKeyPair();
+var value= "GEOHASHINGVALUE";
+r = sha256.update(value).digest();//"hex");
+
 
 var p = tryPoint(r);
-console.log("bult-in x:",p.x.fromRed().toString(16));
-console.log("bult-in y:",p.y.fromRed().toString(16));
-console.log(Buffer.from(r).toString('hex'))
+
+p = p.mul(Alice.getPrivate());
+
+console.log("secret:",Alice.getPrivate().toString(16))
+console.log("trypoint-in x:",p.x.fromRed().toString(16));
+console.log("trypoint-in y:",p.y.fromRed().toString(16));
+console.log("value hash:",Buffer.from(r).toString('hex'))
 
 //console.log("custom:",tryPoint(r).y.fromRed().toString(16));
 
 
-console.log("DER point:",p.encode("hex",true));
+console.log("DER point:",p.encodeCompressed('hex'));
+
+var dp = curve.curve.decodePoint("036b6786879a65a29852ddc3d07e3e758b890e9adfa21b5a5786f048820fc7a88d",'hex');
+
+console.log("decoded DER x:",dp.x.fromRed().toString(16));
+console.log("decoded DER x:",dp.y.fromRed().toString(16));
+
+
 
 function BytesToPoint(v){
     

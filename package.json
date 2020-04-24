@@ -1,10 +1,12 @@
 {
+
   "name": "dh-psi",
   "version": "0.0.1",
   "description": "test implementation of diffie hellman psi in js land",
   "main": "client.js",
   "scripts": {
-    "test": "test"
+    "test": "test",
+    "build": "webpack"
   },
   "author": "Amit Shah",
   "license": "MIT",
