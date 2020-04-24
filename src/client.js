@@ -94,8 +94,9 @@ console.log("DER VALUE:",clientValue.encode("hex",true));
 // console.log(compareValue.getX().toString(16));
 
 console.log("-----------------------------------\r\n");
+var Alice = ec.genKeyPair();
 
-value= "test";
+value= "GEOHASHINGVALUE";
 curve = new EC("p256");
 r = curve.hash().update(value).digest();//"hex");
 var red = BN.red(curve.curve.p);
@@ -122,6 +123,8 @@ function tryPointNotReductionContext(r){
 
 
 function pointFromX(x,odd) {
+  //BN simply returns the passed in value if it is a BN, however; 
+  //reduction contexts are immutable, so we have to do some craziness
   var a = new BN(CURVE.curve.a.fromRed().toString(16), 16).toRed(RED);
   var b = new BN(CURVE.curve.b.fromRed().toString(16), 16).toRed(RED);
   console.log("a:",a.fromRed().toString(16))
@@ -141,14 +144,63 @@ function pointFromX(x,odd) {
   if (odd && !isOdd || !odd && isOdd)
     y = y.redNeg();
   console.log("pontFromX:",y.fromRed().toString(16));
-  return  y;
+  return  CURVE.curve.point(x,y);
 };
 
-var p = CURVE.curve.pointFromX(r);
-console.log("bult-in:",p.y.fromRed().toString(16));
 
-pointFromX(r);
 
+function readBit(buffer, i, bit){
+  return (buffer[i] >> bit) % 2;
+}
+
+function setBit(buffer, i, bit, value){
+  if(value == 0){
+    buffer[i] &= ~(1 << bit);
+  }else{
+    buffer[i] |= (1 << bit);
+  }
+}
+
+//increment the least signficant bit 
+function incrementLSB(buffer){
+    for(var i=(buffer.length)-1 ; i>=0; i--){
+        for(var b=0; b<8; b++){
+            //console.debug("iter:",(i+1)*8-(b+1) , " value:", readBit(buffer,i,b));
+            if(readBit(buffer,i,b)===0){
+                setBit(buffer,i,b);
+                console.debug("set bit:",(i+1)*8-(b+1));
+                return;
+            }
+        }        
+    }
+}
+
+
+
+function tryPoint(r){
+    for(;;){
+        try{
+            return CURVE.curve.pointFromX(r);
+            //return pointFromX(r) no need for custom
+        }catch(e){
+            console.error(e);
+            incrementLSB(r);
+            
+        }
+    }
+}
+
+
+
+var p = tryPoint(r);
+console.log("bult-in x:",p.x.fromRed().toString(16));
+console.log("bult-in y:",p.y.fromRed().toString(16));
+console.log(Buffer.from(r).toString('hex'))
+
+//console.log("custom:",tryPoint(r).y.fromRed().toString(16));
+
+
+console.log("DER point:",p.encode("hex",true));
 
 function BytesToPoint(v){
     
