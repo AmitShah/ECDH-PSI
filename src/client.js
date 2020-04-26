@@ -124,7 +124,7 @@ function processEcdh(){
     var serverPts = data.ServerDerPts.map(sdp=>{
       var pt = decodeDerPoint(sdp);
       pt = pt.mul(EphemerealKey.getPrivate());
-      return pt.getX().toString(16)
+      return pt.getX().toString(16).padStart(64,'0');
     });
 
     console.log("CLIENT POINTS:", data.ClientDerPts);
