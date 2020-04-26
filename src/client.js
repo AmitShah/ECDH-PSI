@@ -98,7 +98,7 @@ function decodeDerPoint(derPoint){
 
 // End Cryptographic Functions
 
-var AliceValues = ["hello","world"];
+var AliceValues = ["random", "values","hello", "wont","world" ];
 
 var Xhr = require('xhr-request')
 
@@ -124,12 +124,13 @@ function processEcdh(){
     var serverPts = data.ServerDerPts.map(sdp=>{
       var pt = decodeDerPoint(sdp);
       pt = pt.mul(EphemerealKey.getPrivate());
-      return pt.encodeCompressed('hex')
+      return pt.getX().toString(16)
     });
 
     console.log("CLIENT POINTS:", data.ClientDerPts);
     console.log("SERVER POINTS:", serverPts);
-
+    var intersection = data.ClientDerPts.map(pts=>pts.substring(2,)).filter(pt=> serverPts.includes(pt));
+    console.log("INTERSECTION=",intersection)
   })
   //sendToServer();
 
