@@ -10,7 +10,7 @@ import (
 	"os/signal"
 	"sync/atomic"
 	"time"
-	"psi"
+	
 	 //"github.com/mmcloughlin/geohash"
 )
 
