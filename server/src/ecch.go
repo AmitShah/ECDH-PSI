@@ -20,7 +20,7 @@ import (
 )
 var (
     key, _ = ecdsa.GenerateKey(curve, rand.Reader)
-    ServerPts = []string{"hello","world"}
+    ServerPts = []string{"02384234", "09asoasdfj32", "hello","data", "world","other","random"}
     curve = elliptic.P256()
     k = new(big.Int).SetBytes([]byte{164, 98, 192, 51, 205, 206, 226, 85, 22, 79, 248, 231, 248, 171, 160, 1, 248, 166, 173, 240, 47, 68, 92, 163, 33, 118, 150, 220, 69, 51, 98})
 )
@@ -81,7 +81,7 @@ func setBit(buffer []byte, bytePos int, bitPos int, value int){
     fmt.Println("SET BIT VALUE BEFORE=",readBit(buffer,bytePos,bitPos))
 
     if value == 0{
-        buffer[bytePos] &= (1 << bitPos);
+        buffer[bytePos] &= ^(1 << bitPos);
     }else{
         fmt.Println("set value to 1")
         buffer[bytePos] |= (1 << bitPos);
