@@ -197,10 +197,18 @@ func enableCors(w *http.ResponseWriter) {
 }
 
 func ECDH(rw http.ResponseWriter, req *http.Request) {
+    EphemerealKey, err := ecdsa.GenerateKey(curve, rand.Reader)
+    
+    if err!=nil{
+        rw.Header().Set("Content-Type", "application/json")
+        json.NewEncoder(rw).Encode(err)
+        return
+    }
+
     decoder := json.NewDecoder(req.Body)
     //fmt.Println(decoder)
     var pts ClientEcdh
-    err := decoder.Decode(&pts)
+    err = decoder.Decode(&pts)
     if err != nil {
         panic(err)
     }
@@ -216,7 +224,7 @@ func ECDH(rw http.ResponseWriter, req *http.Request) {
         fmt.Println("X value:",hex.EncodeToString(x.Bytes()))
         fmt.Println("Y value:",hex.EncodeToString(y.Bytes()))
         fmt.Println(i, derPoint)
-        x,y= curve.ScalarMult(x,y,key.D.Bytes())
+        x,y= curve.ScalarMult(x,y,EphemerealKey.D.Bytes())
         cpp := EncodePoint(curve, x,y)
         result.ClientDerPts = append(result.ClientDerPts,cpp)
     }
@@ -224,7 +232,7 @@ func ECDH(rw http.ResponseWriter, req *http.Request) {
     fmt.Println("SERVER VALUES-------------------------------------")
 
     for i, srvPts := range ServerPts{
-        spp:= EncryptValueToDer(key, curve, srvPts)
+        spp:= EncryptValueToDer(EphemerealKey, curve, srvPts)
         fmt.Println(i, spp)
         result.ServerDerPts = append(result.ServerDerPts,spp )
     }
